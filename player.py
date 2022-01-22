@@ -1,5 +1,6 @@
 """The event loop that listens for events and plays the corresponding sounds."""
 import pygame
+from threading import Thread
 
 try:
     from .startup_helpers import (
@@ -48,6 +49,8 @@ class Player:  # pylint:disable=too-few-public-methods
         # )
         # pygame.mixer.set_num_channels(32)
         sound_by_key = dict(zip(keys, key_sounds))
+        waiter_thread = Thread(target=self.thread_waiter)
+        waiter_thread.start()
         while True:
             key = queue.get()
             if key is not None:
@@ -60,12 +63,12 @@ class Player:  # pylint:disable=too-few-public-methods
                     if not s_pedal_down:
                         for channel in self.playing.values():
                             channel.stop()
-                            # channel.wait_done()
+
                     continue
-                if key["down"] and key["key"].value == "right alt":
-                    d_pedal_down = not d_pedal_down
-                    print("Damper Pedal :", d_pedal_down)
-                    continue
+                # if key["down"] and key["key"].value == "right alt":
+                #     d_pedal_down = not d_pedal_down
+                #     print("Damper Pedal :", d_pedal_down)
+                #     continue
                 try:
                     sound = sound_by_key[key["key"]]
                 except KeyError:
@@ -88,10 +91,38 @@ class Player:  # pylint:disable=too-few-public-methods
                         channel = self.playing[key["key"].value]
                         channel.stop()
                         # channel.wait_done()
-                        del self.playing[key["key"].value]
+                        # waiter_thread = Thread(target=channel.wait_done)
+                        # waiter_thread.start()
+                        # print("Started waiter")
                     except KeyError:
                         pass
+
             # elif len(self.playing) > 0:
             #     if not self.playing.values()[0].is_playing():
             #         self.playing.values()[0].wait_done()
             #         del self.playing.values()[0]
+
+    def thread_waiter(
+        self,
+    ):
+        """Spin off waiters in threads to catch the notes."""
+        waiters = []
+        while True:
+            try:
+                note_copy = self.playing.copy().values()
+                for note in note_copy:
+                    if note.is_playing():
+                        waiter_thread = Thread(target=note.wait_done)
+                        print("Waiting on note")
+                        waiter_thread.start()
+                        waiters.append(waiter_thread)
+
+                for waiter in waiters:
+                    waiter.join()
+            except Exception as exc:
+                print(f"Waiters hit ex: {exc}")
+                for waiter in waiters:
+                    try:
+                        waiter.join()
+                    except:
+                        pass

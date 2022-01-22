@@ -230,7 +230,7 @@ def configure_pygame_audio_and_set_ui(
     key_size = 60
     overrides = {}
     for color_value, keys in color_to_key.items():
-        override_color = color = pygame.Color(color_value)
+        override_color = pygame.Color(color_value)
         inverted_color = list(~override_color)
         other_val = 255
         if (
