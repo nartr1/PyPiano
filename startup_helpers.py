@@ -16,6 +16,7 @@ import librosa
 import numpy
 import pygame
 import soundfile
+import simpleaudio as sa
 
 DESCRIPTION = 'Use your computer keyboard as a "piano"'
 
@@ -23,12 +24,13 @@ ANCHOR_INDICATOR = " anchor"
 ANCHOR_NOTE_REGEX = re.compile(r"\s[abcdefg]$")
 DESCRIPTOR_32BIT = "FLOAT"
 BITS_32BIT = 32
-AUDIO_ALLOWED_CHANGES_HARDWARE_DETERMINED = 1
-SOUND_FADE_MILLISECONDS = 1
+AUDIO_ALLOWED_CHANGES_HARDWARE_DETERMINED = 0
+SOUND_FADE_MILLISECONDS = 250
 CYAN = (0, 255, 255, 255)
 BLACK = (0, 0, 0, 255)
 WHITE = (255, 255, 255, 255)
 
+DAMPER_PEDAL = 0.3
 
 AUDIO_ASSET_PREFIX = "audio_files/"
 KEYBOARD_ASSET_PREFIX = "keyboards/"
@@ -109,8 +111,16 @@ def get_or_create_key_sounds(
                 ]
                 sound = numpy.ascontiguousarray(numpy.vstack(new_channels).T)
             soundfile.write(cached_path, sound, sample_rate_hz, DESCRIPTOR_32BIT)
-        sounds.append(sound)
-    sounds = map(pygame.sndarray.make_sound, sounds)
+        sounds.append(
+            sa.WaveObject(
+                sound,
+                num_channels=channels,
+                bytes_per_sample=4,
+                sample_rate=sample_rate_hz,
+            )
+        )
+        # sounds.append(sound)
+    # sounds = map(pygame.sndarray.make_sound, sounds)
     return sounds
 
 

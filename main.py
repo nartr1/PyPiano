@@ -8,19 +8,36 @@ from typing import List, Optional, Tuple
 import keyboardlayout as kl
 import keyboardlayout.pygame as klp
 import pygame
-from player import Player
-from startup_helpers import (
-    get_audio_data,
-    get_keyboard_info,
-    get_or_create_key_sounds,
-    get_parser,
-    SOUND_FADE_MILLISECONDS,
-    AUDIO_ASSET_PREFIX,
-    CURRENT_WORKING_DIR,
-    KEYBOARD_ASSET_PREFIX,
-    configure_pygame_audio_and_set_ui,
-)
-from multiprocessing import Process, Queue
+
+try:
+    from .player import Player
+    from .startup_helpers import (
+        get_audio_data,
+        get_keyboard_info,
+        get_or_create_key_sounds,
+        get_parser,
+        SOUND_FADE_MILLISECONDS,
+        AUDIO_ASSET_PREFIX,
+        CURRENT_WORKING_DIR,
+        KEYBOARD_ASSET_PREFIX,
+        configure_pygame_audio_and_set_ui,
+    )
+except:
+    from player import Player
+    from startup_helpers import (
+        get_audio_data,
+        get_keyboard_info,
+        get_or_create_key_sounds,
+        get_parser,
+        SOUND_FADE_MILLISECONDS,
+        AUDIO_ASSET_PREFIX,
+        CURRENT_WORKING_DIR,
+        KEYBOARD_ASSET_PREFIX,
+        configure_pygame_audio_and_set_ui,
+    )
+# from multiprocessing import Process, Pipe
+from threading import Thread
+from queue import Queue
 
 
 def play_until_user_exits(
@@ -29,13 +46,14 @@ def play_until_user_exits(
     keys: List[kl.Key],
     key_sounds: List[pygame.mixer.Sound],
     keyboard: klp.KeyboardLayout,
+    debug=False,
 ):
     """Start the player event loops."""
     sound_by_key = dict(zip())
     playing = True
     queue = Queue()
 
-    player_process = Process(
+    player_process = Thread(
         target=Player().start,
         args=(
             keys,
@@ -45,6 +63,7 @@ def play_until_user_exits(
             queue,
             sound_by_key,
             SOUND_FADE_MILLISECONDS,
+            debug,
         ),
     )
     player_process.start()
@@ -88,7 +107,7 @@ def process_args(parser: argparse.ArgumentParser, args: Optional[List]) -> Tuple
     keyboard_path = args.keyboard
     if keyboard_path.startswith(KEYBOARD_ASSET_PREFIX):
         keyboard_path = os.path.join(CURRENT_WORKING_DIR, keyboard_path)
-    return wav_path, keyboard_path, args.clear_cache
+    return wav_path, keyboard_path, args.clear_cache, args.verbose
 
 
 def play_pianoputer(  # pylint:disable=too-many-locals
@@ -96,7 +115,7 @@ def play_pianoputer(  # pylint:disable=too-many-locals
 ):
     """Initialize the keyboard, sounds, and event loops."""
     parser = get_parser()
-    wav_path, keyboard_path, clear_cache = process_args(parser, args)
+    wav_path, keyboard_path, clear_cache, debug = process_args(parser, args)
     _, framerate_hz, channels = get_audio_data(wav_path)
     results = get_keyboard_info(keyboard_path)
     keys, tones, color_to_key, key_color, key_txt_color = results
@@ -112,7 +131,7 @@ def play_pianoputer(  # pylint:disable=too-many-locals
         "Press the keys on your keyboard. "
         "To exit presss ESC or close the pygame window"
     )
-    play_until_user_exits(framerate_hz, channels, keys, key_sounds, keyboard)
+    play_until_user_exits(framerate_hz, channels, keys, key_sounds, keyboard, debug)
 
 
 if __name__ == "__main__":
