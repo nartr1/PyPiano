@@ -73,9 +73,6 @@ def play_until_user_exits(
             if event.type == pygame.QUIT:
                 playing = False
                 break
-            if hasattr(event, "key") and event.key == pygame.K_ESCAPE:
-                playing = False
-                break
 
             key = keyboard.get_key(event)
             if key is None:
@@ -129,7 +126,7 @@ def play_pianoputer(  # pylint:disable=too-many-locals
     print(
         "Ready for you to play!\n"
         "Press the keys on your keyboard. "
-        "To exit presss ESC or close the pygame window"
+        "To exit close the window"
     )
     play_until_user_exits(framerate_hz, channels, keys, key_sounds, keyboard, debug)
 
