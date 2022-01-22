@@ -106,8 +106,8 @@ class Player:  # pylint:disable=too-few-public-methods
         self,
     ):
         """Spin off waiters in threads to catch the notes."""
-        waiters = []
         while True:
+            waiters = []
             try:
                 note_copy = self.playing.copy().values()
                 for note in note_copy:
