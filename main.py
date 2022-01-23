@@ -99,6 +99,13 @@ def play_until_user_exits(
         txt_font=pygame.font.SysFont("Arial", key_size // 4),
         txt_padding=(key_size // 10, key_size // 10),
     )
+    normal_pedal_info = kl.KeyInfo(
+        margin=margin,
+        color=pygame.Color(GREY),
+        txt_color=pygame.Color(BLACK),
+        txt_font=pygame.font.SysFont("Arial", key_size // 4),
+        txt_padding=(key_size // 10, key_size // 10),
+    )
     pedal = False
     while playing:
         if overrides != override_copy:
@@ -120,13 +127,13 @@ def play_until_user_exits(
                         playing_notes[key.value] = playing_key_info
                     else:
                         pedal = not pedal
-                        playing_notes["space"] = pedal_info
                 else:
                     try:
                         del playing_notes[key.value]
                     except KeyError:
                         pass
 
+                playing_notes["space"] = pedal_info if pedal else normal_pedal_info
         overrides.update(playing_notes)
         keyboard = klp.KeyboardLayout(
             layout_name, keyboard_info, letter_key_size, key_info, overrides
