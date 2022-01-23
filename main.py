@@ -101,12 +101,11 @@ def play_until_user_exits(
     )
     pedal = False
     while playing:
-        overrides = override_copy.copy()
-        for event in pygame.event.get():
+        if overrides != override_copy:
+            overrides = override_copy.copy()
+        event = pygame.event.poll()
+        if event is not None:
             # pylint: disable=no-member
-            if event.type == pygame.QUIT:
-                playing = False
-                break
 
             key = keyboard.get_key(event)
             if key is None:
@@ -116,24 +115,25 @@ def play_until_user_exits(
             key_event = {"key": key, "down": keydown}
             queue.put(key_event)
 
-            if keydown and key.value == "space":
-                pedal = not pedal
-            elif keydown:
-                playing_notes[key.value] = playing_key_info
+            if keydown:
+                if key.value != "space":
+                    playing_notes[key.value] = playing_key_info
+                else:
+                    pedal = not pedal
+                    playing_notes["space"] = pedal_info
+
             else:
                 try:
                     del playing_notes[key.value]
                 except KeyError:
                     pass
-            if pedal and "space" not in playing_notes:
-                playing_notes["space"] = pedal_info
 
-            overrides.update(playing_notes)
-            keyboard = klp.KeyboardLayout(
-                layout_name, keyboard_info, letter_key_size, key_info, overrides
-            )
-            keyboard.draw(screen)
-            pygame.display.update()
+        overrides.update(playing_notes)
+        keyboard = klp.KeyboardLayout(
+            layout_name, keyboard_info, letter_key_size, key_info, overrides
+        )
+        keyboard.draw(screen)
+        pygame.display.update()
 
     player_process.join()
     print("Goodbye")
