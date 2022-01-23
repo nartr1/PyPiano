@@ -29,6 +29,8 @@ SOUND_FADE_MILLISECONDS = 250
 CYAN = (0, 255, 255, 255)
 BLACK = (0, 0, 0, 255)
 WHITE = (255, 255, 255, 255)
+GREY = (128, 128, 128, 128)
+PERIWINKLE = (0, 69, 66, 245)
 
 DAMPER_PEDAL = 0.3
 
@@ -181,7 +183,7 @@ def get_keyboard_info(keyboard_file: str):
         key_txt_color = (0, 0, 0, 255)
     for index, key in enumerate(keys):
         if index == anchor_index:
-            color_to_key[CYAN].append(key)
+            color_to_key[PERIWINKLE].append(key)
             continue
         if black_key_indices:
             used_index = (index - anchor_index) % 12
@@ -271,7 +273,15 @@ def configure_pygame_audio_and_set_ui(
     if keyboard:
         keyboard.draw(screen)
     pygame.display.update()
-    return screen, keyboard
+    return (
+        screen,
+        keyboard,
+        layout_name,
+        keyboard_info,
+        letter_key_size,
+        key_info,
+        overrides,
+    )
 
 
 def get_audio_data(wav_path: str) -> Tuple:

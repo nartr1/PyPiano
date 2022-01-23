@@ -21,6 +21,9 @@ try:
         CURRENT_WORKING_DIR,
         KEYBOARD_ASSET_PREFIX,
         configure_pygame_audio_and_set_ui,
+        CYAN,
+        BLACK,
+        GREY,
     )
 except:
     from player import Player
@@ -34,6 +37,9 @@ except:
         CURRENT_WORKING_DIR,
         KEYBOARD_ASSET_PREFIX,
         configure_pygame_audio_and_set_ui,
+        CYAN,
+        BLACK,
+        GREY,
     )
 # from multiprocessing import Process, Pipe
 from threading import Thread
@@ -41,6 +47,12 @@ from queue import Queue
 
 
 def play_until_user_exits(
+    screen,
+    layout_name,
+    keyboard_info,
+    letter_key_size,
+    key_info,
+    overrides,
     framerate_hz,
     channels,
     keys: List[kl.Key],
@@ -67,7 +79,29 @@ def play_until_user_exits(
         ),
     )
     player_process.start()
+
+    playing_notes = {}
+    override_copy = overrides.copy()
+    key_size = 60
+    margin = 4
+
+    playing_key_info = kl.KeyInfo(
+        margin=margin,
+        color=pygame.Color(CYAN),
+        txt_color=pygame.Color(GREY),
+        txt_font=pygame.font.SysFont("Arial", key_size // 4),
+        txt_padding=(key_size // 10, key_size // 10),
+    )
+    pedal_info = kl.KeyInfo(
+        margin=margin,
+        color=pygame.Color(BLACK),
+        txt_color=pygame.Color(BLACK),
+        txt_font=pygame.font.SysFont("Arial", key_size // 4),
+        txt_padding=(key_size // 10, key_size // 10),
+    )
+    pedal = False
     while playing:
+        overrides = override_copy.copy()
         for event in pygame.event.get():
             # pylint: disable=no-member
             if event.type == pygame.QUIT:
@@ -77,10 +111,29 @@ def play_until_user_exits(
             key = keyboard.get_key(event)
             if key is None:
                 continue
-            key = keyboard.get_key(event)
-            if key is None:
-                continue
-            queue.put({"key": key, "down": event.type == pygame.KEYDOWN})
+
+            keydown = event.type == pygame.KEYDOWN
+            key_event = {"key": key, "down": keydown}
+            queue.put(key_event)
+
+            if keydown and key.value == "space":
+                pedal = not pedal
+            elif keydown:
+                playing_notes[key.value] = playing_key_info
+            else:
+                try:
+                    del playing_notes[key.value]
+                except KeyError:
+                    pass
+            if pedal and "space" not in playing_notes:
+                playing_notes["space"] = pedal_info
+
+            overrides.update(playing_notes)
+            keyboard = klp.KeyboardLayout(
+                layout_name, keyboard_info, letter_key_size, key_info, overrides
+            )
+            keyboard.draw(screen)
+            pygame.display.update()
 
     player_process.join()
     print("Goodbye")
@@ -120,7 +173,15 @@ def play_pianoputer(  # pylint:disable=too-many-locals
         wav_path, framerate_hz, channels, tones, clear_cache, keys
     )
 
-    _, keyboard = configure_pygame_audio_and_set_ui(
+    (
+        screen,
+        keyboard,
+        layout_name,
+        keyboard_info,
+        letter_key_size,
+        key_info,
+        overrides,
+    ) = configure_pygame_audio_and_set_ui(
         keyboard_path, color_to_key, key_color, key_txt_color
     )
     print(
@@ -128,7 +189,20 @@ def play_pianoputer(  # pylint:disable=too-many-locals
         "Press the keys on your keyboard. "
         "To exit close the window"
     )
-    play_until_user_exits(framerate_hz, channels, keys, key_sounds, keyboard, debug)
+    play_until_user_exits(
+        screen,
+        layout_name,
+        keyboard_info,
+        letter_key_size,
+        key_info,
+        overrides,
+        framerate_hz,
+        channels,
+        keys,
+        key_sounds,
+        keyboard,
+        debug,
+    )
 
 
 if __name__ == "__main__":
