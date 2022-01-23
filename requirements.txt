@@ -1,0 +1,2 @@
+pianoputer==2.0.2
+simpleaudio==1.0.4
